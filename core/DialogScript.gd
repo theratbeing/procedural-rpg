@@ -11,10 +11,10 @@ enum DG {
 	LABEL,
 	GOTO,
 	IF,
-	DO,
 	
 	ARRAY,
 	SET,
+	CALL,
 	
 	EQUAL,
 	LESS,

@@ -193,9 +193,9 @@ margin_right = 1160.0
 margin_bottom = 25.0
 
 [node name="Message" type="RichTextLabel" parent="ScrollContainer/VBoxContainer"]
-margin_top = 31.0
+margin_top = 21.0
 margin_right = 1160.0
-margin_bottom = 76.0
+margin_bottom = 66.0
 mouse_filter = 2
 bbcode_enabled = true
 bbcode_text = "Text.

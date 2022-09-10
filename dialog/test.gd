@@ -9,7 +9,7 @@ func _init():
 		[DG.SAY, "Jamie", "My name is Jamie."],
 		
 		[DG.LABEL, "choice-1"],
-		[DG.CHOOSE, "#choice-1", ["What do you want to do next?"],
+		[DG.CHOOSE, "#choice-1", "What do you want to do next?",
 			["start", "Back to beginning."],
 			["next", "Read next line."],
 			["skipped", "Skip some text."],
