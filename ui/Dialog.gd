@@ -99,7 +99,7 @@ func evalArray(array: Array):
 			data.setVar(array[1], eval(array[2]))
 		DialogScript.DG.CALL:
 			return callFunc(
-				eval(array[1]), eval(array[2]), eval(array[3]))
+				eval(array[1]), eval(array[2]), array.slice(3, -1))
 		
 		DialogScript.DG.EQUAL:
 			return eval(array[1]) == eval(array[2])
@@ -132,8 +132,18 @@ func evalArray(array: Array):
 func close():
 	emit_signal("dialog_ended")
 
-func callFunc(object, fname: String, arg):
-	return object.call(fname, arg)
+func callFunc(object, fname: String, args: Array):
+	match args.size():
+		0:
+			return object.call(fname)
+		1:
+			return object.call(fname, eval(args[0]))
+		2:
+			return object.call(fname, eval(args[0]), eval(args[1]))
+		3:
+			return object.call(fname, eval(args[0]), eval(args[1]), eval(args[2]))
+		var n:
+			printerr("Too many arguments: %d" % n)
 
 func printMessage(text: String):
 	printText(text)
