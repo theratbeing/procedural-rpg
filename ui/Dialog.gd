@@ -4,16 +4,16 @@ onready var container = get_node("ScrollContainer/VBoxContainer")
 onready var speaker   = get_node("ScrollContainer/VBoxContainer/Speaker")
 onready var message   = get_node("ScrollContainer/VBoxContainer/Message")
 onready var sep_line  = get_node("ScrollContainer/VBoxContainer/HSeparator")
+onready var animation = get_node("AnimationPlayer")
 
-export(float) var char_per_sec = 20.0
+export(float) var char_per_sec = 8.0
 
 var data     : DialogScript
 var scenario : Array
 var scenario_index := 0
 var choice_var   := ""
-var button_nodes := Array() 
-var printing_done = false
-var tween : Tween
+var button_nodes := Array()
+var done_printing := false
 
 signal line_ended
 signal dialog_ended
@@ -33,15 +33,15 @@ func _ready():
 	speaker.visible  = false
 	sep_line.visible = false
 	message.visible  = false
+	
+	animation.connect("animation_finished", self, "onAnimationFinished")
 
 func _gui_input(event):
 	if event.is_action("ui_accept") or event.is_action("left_click"):
 		advance()
 
 func advance():
-	if !printing_done:
-		endLine()
-	elif choice_var.empty():
+	if done_printing and choice_var.empty():
 		nextLine()
 
 func nextLine():
@@ -87,7 +87,7 @@ func evalArray(array: Array):
 			nextLine()
 		DialogScript.DG.GOTO:
 			scenario_index = data.label[eval(copy[0])]
-			nextLine()
+			readLine()
 		DialogScript.DG.IF:
 			if (eval(copy[0])):
 				eval(copy[1])
@@ -134,15 +134,13 @@ func close():
 	emit_signal("dialog_ended")
 
 func printMessage(args: Array):
-	speaker.visible  = false
-	sep_line.visible = false
 	printText(args)
+	animation.play("Print")
 
 func sayMessage(chara_name: String, args: Array):
-	speaker.visible  = true
-	sep_line.visible = true
 	speaker.bbcode_text = chara_name
 	printText(args)
+	animation.play("Say")
 
 func printText(args: Array):
 	var text := ""
@@ -151,21 +149,13 @@ func printText(args: Array):
 
 	message.percent_visible = 0.0
 	message.bbcode_text = text
-	message.visible = true
-	printing_done   = false
-	
-	var duration = float(text.length()) / char_per_sec
-	tween = Tween.new()
-	add_child(tween)
-	var _out = tween.connect("tween_completed", self, "onTweenCompleted") 
-	_out = tween.interpolate_property(message, "percent_visible",
-	0.0, 1.0, duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	_out = tween.start()
+	animation.playback_speed = float(text.length()) / char_per_sec
+	done_printing = false
 
 func choose(var_name: String, prompt: Array, choice: Array):
 	choice_var = var_name
 	printMessage(prompt)
-	yield(self, "line_ended")
+	yield(animation, "animation_finished")
 	
 	for c_arr in choice:
 		assert(typeof(c_arr) == TYPE_ARRAY)
@@ -190,13 +180,6 @@ func onChoiceMade(value):
 	button_nodes.clear()
 	advance()
 
-func onTweenCompleted(_arg1, _arg2):
-	endLine()
-
-func endLine():
-	var _out = tween.stop_all()
-	tween.queue_free()
-	
-	message.percent_visible = 1.0
-	printing_done = true
+func onAnimationFinished(_anim):
+	done_printing = true
 	emit_signal("line_ended")
