@@ -4,7 +4,6 @@ onready var container = get_node("ScrollContainer/VBoxContainer")
 onready var speaker   = get_node("ScrollContainer/VBoxContainer/Speaker")
 onready var message   = get_node("ScrollContainer/VBoxContainer/Message")
 onready var sep_line  = get_node("ScrollContainer/VBoxContainer/HSeparator")
-onready var tween     = get_node("Tween")
 
 export(float) var char_per_sec = 20.0
 
@@ -13,11 +12,13 @@ var scenario : Array
 var scenario_index := 0
 var choice_var   := ""
 var button_nodes := Array() 
+var printing_done = false
+var tween : Tween
 
 signal line_ended
 signal dialog_ended
 
-func loadDialog(file: String, label: String):
+func loadDialog(file: String, label: String = ""):
 	data = DialogScript.loadDialog(file)
 	scenario = data.content
 
@@ -29,18 +30,23 @@ func loadDialog(file: String, label: String):
 	readLine()
 
 func _ready():
-	var _connect = tween.connect("tween_all_completed", self, "emit_signal", ["line_ended"])
+	speaker.visible  = false
+	sep_line.visible = false
+	message.visible  = false
 
 func _gui_input(event):
 	if event.is_action("ui_accept") or event.is_action("left_click"):
 		advance()
 
 func advance():
-	if tween.is_active():
+	if !printing_done:
 		endLine()
-	elif !choice_var.empty():
-		scenario_index += 1
-		readLine()
+	elif choice_var.empty():
+		nextLine()
+
+func nextLine():
+	scenario_index += 1
+	readLine()
 
 func readLine():
 	if scenario_index >= scenario.size():
@@ -61,52 +67,63 @@ func evalArray(array: Array):
 	if array.empty():
 		return
 	
-	var head = array.pop_front()
+	var copy = array.duplicate()
+	var head = copy.pop_front()
 	match head:
-		DialogScript.Command.PRINT:
-			printMessage(array)
-		DialogScript.Command.SAY:
-			sayMessage(array.pop_front(), array)
-		DialogScript.Command.CHOOSE:
-			var variable = array.pop_front()
-			var prompt   = array.pop_front()
-			choose(variable, prompt, array)
-		DialogScript.Command.QUIT:
+		DialogScript.DG.PRINT:
+			printMessage(copy)
+		DialogScript.DG.SAY:
+			sayMessage(copy.pop_front(), copy)
+		DialogScript.DG.CHOOSE:
+			var variable = copy.pop_front()
+			var prompt   = copy.pop_front()
+			choose(variable, prompt, copy)
+		DialogScript.DG.QUIT:
 			close()
 		
-		DialogScript.Command.LOAD:
-			loadDialog(array[0], array[1])
-		DialogScript.Command.LABEL:
-			advance()
-		DialogScript.Command.GOTO:
-			scenario_index = data.label[eval(array[0])]
-			advance()
-		DialogScript.Command.IF:
-			if (eval(array[0])):
-				eval(array[1])
-			elif array.size() == 3:
-				eval(array[2])
+		DialogScript.DG.LOAD:
+			loadDialog(copy[0], copy[1])
+		DialogScript.DG.LABEL:
+			nextLine()
+		DialogScript.DG.GOTO:
+			scenario_index = data.label[eval(copy[0])]
+			nextLine()
+		DialogScript.DG.IF:
+			if (eval(copy[0])):
+				eval(copy[1])
+			elif copy.size() == 3:
+				eval(copy[2])
+		DialogScript.DG.DO:
+			for line in copy:
+				eval(line)
 		
-		DialogScript.Command.ARRAY:
-			return array
-		DialogScript.Command.SET:
-			data.setVar(array[0], eval(array[1]))
+		DialogScript.DG.ARRAY:
+			return copy
+		DialogScript.DG.SET:
+			data.setVar(copy[0], eval(copy[1]))
 		
-		DialogScript.Command.EQUAL:
-			return eval(array[0]) == eval(array[1])
-		DialogScript.Command.LESS:
-			return eval(array[0]) < eval(array[1])
-		DialogScript.Command.MORE:
-			return eval(array[0]) > eval(array[1])
+		DialogScript.DG.EQUAL:
+			return eval(copy[0]) == eval(copy[1])
+		DialogScript.DG.LESS:
+			return eval(copy[0]) < eval(copy[1])
+		DialogScript.DG.MORE:
+			return eval(copy[0]) > eval(copy[1])
 		
-		DialogScript.Command.ADD:
-			return eval(array[0]) + eval(array[1])
-		DialogScript.Command.SUB:
-			return eval(array[0]) - eval(array[1])
-		DialogScript.Command.MUL:
-			return eval(array[0]) * eval(array[1])
-		DialogScript.Command.DIV:
-			return eval(array[0]) / eval(array[1])
+		DialogScript.DG.ADD:
+			return eval(copy[0]) + eval(copy[1])
+		DialogScript.DG.SUB:
+			return eval(copy[0]) - eval(copy[1])
+		DialogScript.DG.MUL:
+			return eval(copy[0]) * eval(copy[1])
+		DialogScript.DG.DIV:
+			return eval(copy[0]) / eval(copy[1])
+		
+		DialogScript.DG.NOT:
+			return not eval(copy[0])
+		DialogScript.DG.AND:
+			return eval(copy[0]) and eval(copy[1])
+		DialogScript.DG.OR:
+			return eval(copy[0]) or eval(copy[1])
 		
 		_:
 			var err_msg = "Parsing error at instruction %d" % scenario_index
@@ -134,11 +151,16 @@ func printText(args: Array):
 
 	message.percent_visible = 0.0
 	message.bbcode_text = text
+	message.visible = true
+	printing_done   = false
 	
 	var duration = float(text.length()) / char_per_sec
-	tween.interpolate_property(message, "percent_visible",
+	tween = Tween.new()
+	add_child(tween)
+	var _out = tween.connect("tween_completed", self, "onTweenCompleted") 
+	_out = tween.interpolate_property(message, "percent_visible",
 	0.0, 1.0, duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
+	_out = tween.start()
 
 func choose(var_name: String, prompt: Array, choice: Array):
 	choice_var = var_name
@@ -168,7 +190,13 @@ func onChoiceMade(value):
 	button_nodes.clear()
 	advance()
 
+func onTweenCompleted(_arg1, _arg2):
+	endLine()
+
 func endLine():
-	tween.stop_all()
+	var _out = tween.stop_all()
+	tween.queue_free()
+	
 	message.percent_visible = 1.0
+	printing_done = true
 	emit_signal("line_ended")

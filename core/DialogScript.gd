@@ -1,7 +1,7 @@
 extends Resource
 class_name DialogScript
 
-enum Command {
+enum DG {
 	PRINT,
 	SAY,
 	CHOOSE,
@@ -11,6 +11,7 @@ enum Command {
 	LABEL,
 	GOTO,
 	IF,
+	DO,
 	
 	ARRAY,
 	SET,
@@ -23,6 +24,10 @@ enum Command {
 	SUB,
 	MUL,
 	DIV,
+	
+	NOT,
+	AND,
+	OR,
 }
 
 const GLOBAL_PREFIX := "$"
@@ -61,7 +66,7 @@ func indexLabel():
 		var command = content[index]
 		if typeof(command) == TYPE_ARRAY and \
 		command.size() == 2 and \
-		command[0] == Command.LABEL:
+		command[0] == DG.LABEL:
 			var label_name = command[1]
 			assert(typeof(label_name) == TYPE_STRING)
 			label[label_name] = index
