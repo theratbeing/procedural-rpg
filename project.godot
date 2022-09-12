@@ -13,9 +13,21 @@ _global_script_classes=[ {
 "class": "DialogScript",
 "language": "GDScript",
 "path": "res://core/DialogScript.gd"
+}, {
+"base": "Item",
+"class": "Equipment",
+"language": "GDScript",
+"path": "res://Equipment.gd"
+}, {
+"base": "Resource",
+"class": "Item",
+"language": "GDScript",
+"path": "res://core/Item.gd"
 } ]
 _global_script_class_icons={
-"DialogScript": ""
+"DialogScript": "",
+"Equipment": "",
+"Item": ""
 }
 
 [application]
