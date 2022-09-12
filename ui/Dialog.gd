@@ -94,7 +94,7 @@ func evalArray(array: Array):
 				eval(array[3])
 		
 		DialogScript.DG.ARRAY:
-			return array
+			return array.slice(1, -1)
 		DialogScript.DG.SET:
 			data.setVar(array[1], eval(array[2]))
 		DialogScript.DG.CALL:
@@ -166,12 +166,13 @@ func choose(var_name: String, prompt: String, choice: Array):
 	yield(animation, "animation_finished")
 	
 	for c_arr in choice:
-		assert(typeof(c_arr) == TYPE_ARRAY)
-		if c_arr.size() == 3:
-			var condition = c_arr.pop_back()
+		var array = eval(c_arr)
+		assert(typeof(array) == TYPE_ARRAY)
+		if array.size() == 3:
+			var condition = array.pop_back()
 			if !eval(condition):
 				continue
-		addChoice(eval(c_arr[0]), eval(c_arr[1]))
+		addChoice(eval(array[0]), eval(array[1]))
 
 func addChoice(value, text: String):
 	var button = Button.new()

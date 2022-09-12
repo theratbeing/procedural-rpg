@@ -10,10 +10,10 @@ func _init():
 		
 		[DG.LABEL, "choice-1"],
 		[DG.CHOOSE, "#choice-1", "What do you want to do next?",
-			["start", "Back to beginning."],
-			["next", "Read next line."],
-			["skipped", "Skip some text."],
-			["quit", "Quit."]
+			[DG.ARRAY, "start", "Back to beginning."],
+			[DG.ARRAY, "next", "Read next line."],
+			[DG.ARRAY, "skipped", "Skip some text."],
+			[DG.ARRAY, "quit", "Quit."]
 		],
 		[DG.GOTO, "#choice-1"],
 		
